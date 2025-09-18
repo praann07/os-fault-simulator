@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OS Fault Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: auto;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .control-panel {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .control-panel h3 {
+            margin-bottom: 20px;
+            color: #4CAF50;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #ff4757, #ff3742);
+            color: white;
+        }
+
+        .btn-info {
+            background: linear-gradient(45deg, #3742fa, #2f3542);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, #2ed573, #1e90ff);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .process-table {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .process-table h3 {
+            margin-bottom: 15px;
+            color: #ffa502;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        th {
+            background: rgba(0, 0, 0, 0.5);
+            color: #4CAF50;
+            font-weight: bold;
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .status-ready { color: #2ed573; }
+        .status-running { color: #3742fa; }
+        .status-waiting { color: #ff4757; }
+
+        .visualization {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .chart-container {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .chart-container h4 {
+            margin-bottom: 15px;
+            color: #ff6b6b;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .gantt-chart {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+
+        .process-block {
+            padding: 8px 12px;
+            margin: 2px;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            min-width: 40px;
+        }
+
+        .memory-bar {
+            height: 30px;
+            background: linear-gradient(90deg, #2ed573 0%, #ffa502 70%, #ff4757 100%);
+            border-radius: 15px;
+            margin: 10px 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .memory-usage {
+            height: 100%;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            transition: width 0.5s ease;
+        }
+
+        .animation {
+            text-align: center;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #fff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .log-container {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            border-left: 4px solid #4CAF50;
+        }
+
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 3px;
+        }
+
+        .log-info { background: rgba(52, 152, 219, 0.2); }
+        .log-warning { background: rgba(241, 196, 15, 0.2); }
+        .log-error { background: rgba(231, 76, 60, 0.2); }
+        .log-success { background: rgba(46, 213, 115, 0.2); }
+
+        .system-status {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .status-card {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .status-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #2ed573, #ffa502);
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🖥️ Operating System Fault Simulator</h1>
+            <p>Real-time OS Problem Detection & Recovery System</p>
+        </div>
+
+        <div class="system-status">
+            <div class="status-card">
+                <div class="status-value" id="processCount">8</div>
+                <div>Active Processes</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="processProgress" style="width: 80%;"></div>
+                </div>
+            </div>
+            <div class="status-card">
+                <div class="status-value" id="cpuUsage">45.2%</div>
+                <div>CPU Usage</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="cpuProgress" style="width: 45%;"></div>
+                </div>
+            </div>
+            <div class="status-card">
+                <div class="status-value" id="memoryUsage">67.8%</div>
+                <div>Memory Usage</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="memoryProgress" style="width: 68%;"></div>
+                </div>
+            </div>
+            <div class="status-card">
+                <div class="status-value" id="systemStatus">ONLINE</div>
+                <div>System Status</div>
+            </div>
+        </div>
+
+        <div class="dashboard">
+            <div class="control-panel">
+                <h3>🎮 Control Panel</h3>
+                <button class="btn btn-danger" onclick="injectFault('deadlock')">
+                    💥 Inject Deadlock
+                </button>
+                <button class="btn btn-danger" onclick="injectFault('cpu')">
+                    🔥 Inject CPU Overload
+                </button>
+                <button class="btn btn-danger" onclick="injectFault('memory')">
+                    💾 Inject Memory Thrashing
+                </button>
+                <button class="btn btn-info" onclick="showAlgorithms()">
+                    📊 Algorithm Comparisons
+                </button>
+                <button class="btn btn-success" onclick="runAnalysis()">
+                    🔍 System Analysis
+                </button>
+                <button class="btn btn-info" onclick="showDashboard()">
+                    📈 Performance Dashboard
+                </button>
+                <button class="btn btn-success" onclick="resetSystem()">
+                    🔄 Reset System
+                </button>
+            </div>
+
+            <div class="process-table">
+                <h3>📋 Process Table</h3>
+                <table id="processTable">
+                    <thead>
+                        <tr>
+                            <th>PID</th>
+                            <th>Process Name</th>
+                            <th>CPU%</th>
+                            <th>Memory%</th>
+                            <th>State</th>
+                        </tr>
+                    </thead>
+                    <tbody id="processTableBody">
+                        <!-- Process data will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="animation" id="animationContainer">
+            <div class="spinner"></div>
+            <div id="animationText">Processing...</div>
+        </div>
+
+        <div class="visualization">
+            <div class="chart-container">
+                <h4>📊 CPU Scheduling (Gantt Chart)</h4>
+                <div id="ganttChart">
+                    <!-- Gantt chart will be populated here -->
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h4>💾 Memory Allocation Map</h4>
+                <div class="memory-bar">
+                    <div class="memory-usage" id="memoryBar" style="width: 68%;"></div>
+                </div>
+                <div id="memoryDetails">
+                    <!-- Memory details will be populated here -->
+                </div>
+            </div>
+        </div>
+
+        <div class="log-container">
+            <h4>📝 System Logs</h4>
+            <div id="systemLogs">
+                <div class="log-entry log-success">[INFO] System initialized successfully</div>
+                <div class="log-entry log-info">[INFO] Loaded 8 real processes from system</div>
+                <div class="log-entry log-info">[INFO] OS Fault Simulator ready</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample process data
+        let processes = [
+            {pid: 1024, name: 'chrome.exe', cpu: 15.2, memory: 18.5, state: 'READY', priority: 2, burstTime: 8},
+            {pid: 2048, name: 'vscode.exe', cpu: 8.1, memory: 12.3, state: 'RUNNING', priority: 1, burstTime: 6},
+            {pid: 3072, name: 'discord.exe', cpu: 5.8, memory: 9.2, state: 'READY', priority: 3, burstTime: 4},
+            {pid: 4096, name: 'firefox.exe', cpu: 12.4, memory: 15.7, state: 'READY', priority: 2, burstTime: 7},
+            {pid: 5120, name: 'spotify.exe', cpu: 3.2, memory: 6.8, state: 'READY', priority: 4, burstTime: 3},
+            {pid: 6144, name: 'notepad.exe', cpu: 0.5, memory: 1.2, state: 'READY', priority: 5, burstTime: 2},
+            {pid: 7168, name: 'explorer.exe', cpu: 2.1, memory: 4.5, state: 'RUNNING', priority: 1, burstTime: 5},
+            {pid: 8192, name: 'steam.exe', cpu: 7.3, memory: 11.1, state: 'READY', priority: 3, burstTime: 9}
+        ];
+
+        let systemLogs = [];
+
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}`;
+            systemLogs.unshift({message: logEntry, type: type});
+            
+            if (systemLogs.length > 20) {
+                systemLogs.pop();
+            }
+            
+            updateLogDisplay();
+        }
+
+        function updateLogDisplay() {
+            const logContainer = document.getElementById('systemLogs');
+            logContainer.innerHTML = '';
+            
+            systemLogs.forEach(log => {
+                const logDiv = document.createElement('div');
+                logDiv.className = `log-entry log-${log.type}`;
+                logDiv.textContent = log.message;
+                logContainer.appendChild(logDiv);
+            });
+        }
+
+        function updateProcessTable() {
+            const tbody = document.getElementById('processTableBody');
+            tbody.innerHTML = '';
+
+            processes.forEach(process => {
+                const row = document.createElement('tr');
+                const statusClass = process.state === 'READY' ? 'status-ready' : 
+                                  process.state === 'RUNNING' ? 'status-running' : 'status-waiting';
+                
+                row.innerHTML = `
+                    <td>${process.pid}</td>
+                    <td>${process.name}</td>
+                    <td>${process.cpu.toFixed(1)}%</td>
+                    <td>${process.memory.toFixed(1)}%</td>
+                    <td class="${statusClass}">${process.state}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            updateSystemStatus();
+        }
+
+        function updateSystemStatus() {
+            const totalCpu = processes.reduce((sum, p) => sum + p.cpu, 0) / processes.length;
+            const totalMemory = processes.reduce((sum, p) => sum + p.memory, 0);
+            
+            document.getElementById('processCount').textContent = processes.length;
+            document.getElementById('cpuUsage').textContent = totalCpu.toFixed(1) + '%';
+            document.getElementById('memoryUsage').textContent = totalMemory.toFixed(1) + '%';
+            
+            document.getElementById('cpuProgress').style.width = Math.min(totalCpu, 100) + '%';
+            document.getElementById('memoryProgress').style.width = Math.min(totalMemory, 100) + '%';
+            document.getElementById('memoryBar').style.width = Math.min(totalMemory, 100) + '%';
+        }
+
+        function updateGanttChart() {
+            const ganttChart = document.getElementById('ganttChart');
+            ganttChart.innerHTML = '';
+
+            const sortedProcesses = [...processes].sort((a, b) => a.priority - b.priority);
+            let currentTime = 0;
+
+            sortedProcesses.forEach((process, index) => {
+                const ganttRow = document.createElement('div');
+                ganttRow.className = 'gantt-chart';
+                
+                const colors = ['#ff4757', '#3742fa', '#2ed573', '#ffa502', '#ff6b6b', '#4834d4', '#00d2d3', '#ff9ff3'];
+                const color = colors[index % colors.length];
+                
+                ganttRow.innerHTML = `
+                    <div class="process-block" style="background-color: ${color}; width: ${process.burstTime * 20}px;">
+                        P${process.pid % 1000}
+                    </div>
+                    <span style="margin-left: 10px;">${process.name} (${process.burstTime}ms)</span>
+                `;
+                
+                ganttChart.appendChild(ganttRow);
+                currentTime += process.burstTime;
+            });
+        }
+
+        function showAnimation(text, duration = 3000) {
+            const container = document.getElementById('animationContainer');
+            const textElement = document.getElementById('animationText');
+            
+            textElement.textContent = text;
+            container.style.display = 'block';
+            
+            setTimeout(() => {
+                container.style.display = 'none';
+            }, duration);
+        }
+
+        function injectFault(faultType) {
+            let faultName = '';
+            let affectedProcesses = [];
+            
+            switch(faultType) {
+                case 'deadlock':
+                    faultName = 'DEADLOCK';
+                    // Set two random processes to waiting state
+                    affectedProcesses = [Math.floor(Math.random() * processes.length), 
+                                       Math.floor(Math.random() * processes.length)];
+                    affectedProcesses.forEach(idx => {
+                        processes[idx].state = 'WAITING';
+                    });
+                    addLog(`Deadlock injected: Processes ${processes[affectedProcesses[0]].pid} and ${processes[affectedProcesses[1]].pid} are now waiting`, 'error');
+                    break;
+                    
+                case 'cpu':
+                    faultName = 'CPU OVERLOAD';
+                    // Set a random process to 100% CPU usage
+                    const cpuIdx = Math.floor(Math.random() * processes.length);
+                    processes[cpuIdx].cpu = 100.0;
+                    addLog(`CPU overload injected: Process ${processes[cpuIdx].name} consuming 100% CPU`, 'warning');
+                    break;
+                    
+                case 'memory':
+                    faultName = 'MEMORY THRASHING';
+                    // Drastically increase memory usage of random processes
+                    processes.forEach((process, idx) => {
+                        if(Math.random() > 0.6) {
+                            process.memory = Math.min(process.memory * 2, 95);
+                        }
+                    });
+                    addLog('Memory thrashing injected: Multiple processes experiencing high memory usage', 'warning');
+                    break;
+            }
+
+            showAnimation(`🚨 Injecting ${faultName} 🚨`);
+            
+            setTimeout(() => {
+                updateProcessTable();
+                updateGanttChart();
+                
+                // Auto-recovery after 2 seconds
+                setTimeout(() => {
+                    showAnimation(`🔧 Starting Recovery: ${faultName} Resolution 🔧`);
+                    
+                    setTimeout(() => {
+                        recoverFromFault(faultType);
+                    }, 2000);
+                }, 2000);
+            }, 1000);
+        }
+
+        function recoverFromFault(faultType) {
+            switch(faultType) {
+                case 'deadlock':
+                    // Reset waiting processes to ready
+                    processes.forEach(process => {
+                        if(process.state === 'WAITING') {
+                            process.state = 'READY';
+                        }
+                    });
+                    addLog('Deadlock resolved: Applied resource preemption and ordering', 'success');
+                    break;
+                    
+                case 'cpu':
+                    // Reset CPU usage to normal levels
+                    processes.forEach(process => {
+                        if(process.cpu > 90) {
+                            process.cpu = Math.random() * 20 + 5;
+                        }
+                    });
+                    addLog('CPU overload resolved: Applied priority scheduling optimization', 'success');
+                    break;
+                    
+                case 'memory':
+                    // Reduce memory usage to normal levels
+                    processes.forEach(process => {
+                        if(process.memory > 80) {
+                            process.memory = Math.random() * 30 + 10;
+                        }
+                    });
+                    addLog('Memory thrashing resolved: Applied LRU page replacement and increased allocation', 'success');
+                    break;
+            }
+
+            updateProcessTable();
+            updateGanttChart();
+            showAnimation('✅ Recovery Completed Successfully ✅');
+        }
+
+        function showAlgorithms() {
+            addLog('Displaying algorithm comparisons: Round Robin vs Priority Scheduling, FIFO vs LRU', 'info');
+            showAnimation('📊 Analyzing Scheduling Algorithms 📊');
+            
+            setTimeout(() => {
+                alert(`Algorithm Comparison Results:
+
+CPU SCHEDULING:
+• Round Robin (Time Quantum: 3ms)
+  - Fair allocation, good for interactive processes
+  - Average turnaround time: 12ms
+  
+• Priority Scheduling
+  - Efficient for system processes
+  - Average turnaround time: 9ms
+  - Recommendation: Priority for system, Round Robin for user processes
+
+MEMORY MANAGEMENT:
+• FIFO Page Replacement: 7/10 page faults
+• LRU Page Replacement: 4/10 page faults
+• Recommendation: LRU performs better but requires more overhead`);
+            }, 2000);
+        }
+
+        function runAnalysis() {
+            addLog('Running complete system analysis...', 'info');
+            showAnimation('🔍 Performing System Analysis 🔍');
+            
+            setTimeout(() => {
+                // Banker's algorithm simulation
+                const safe = Math.random() > 0.3;
+                addLog(`Banker's Algorithm: System is in ${safe ? 'SAFE' : 'UNSAFE'} state`, safe ? 'success' : 'warning');
+                
+                // Deadlock detection
+                const deadlockDetected = processes.some(p => p.state === 'WAITING');
+                addLog(`Deadlock Detection: ${deadlockDetected ? 'Cycle detected' : 'No cycles found'}`, deadlockDetected ? 'error' : 'success');
+                
+                updateGanttChart();
+            }, 2000);
+        }
+
+        function showDashboard() {
+            addLog('Refreshing performance dashboard...', 'info');
+            showAnimation('📈 Updating Performance Dashboard 📈');
+            
+            setTimeout(() => {
+                updateProcessTable();
+                updateGanttChart();
+                addLog('Performance dashboard updated successfully', 'success');
+            }, 1500);
+        }
+
+        function resetSystem() {
+            addLog('Resetting system to initial state...', 'info');
+            showAnimation('🔄 Resetting System 🔄');
+            
+            setTimeout(() => {
+                // Reset all processes to normal state
+                processes.forEach((process, idx) => {
+                    process.cpu = Math.random() * 15 + 2;
+                    process.memory = Math.random() * 20 + 5;
+                    process.state = idx < 2 ? 'RUNNING' : 'READY';
+                });
+                
+                updateProcessTable();
+                updateGanttChart();
+                addLog('System reset completed successfully', 'success');
+            }, 2000);
+        }
+
+        // Initialize the system
+        function initSystem() {
+            updateProcessTable();
+            updateGanttChart();
+            addLog('OS Fault Simulator initialized successfully', 'success');
+            
+            // Simulate real-time updates
+            setInterval(() => {
+                // Randomly update CPU usage slightly
+                processes.forEach(process => {
+                    if(process.state === 'RUNNING' && process.cpu < 90) {
+                        process.cpu += (Math.random() - 0.5) * 2;
+                        process.cpu = Math.max(0, Math.min(process.cpu, 100));
+                    }
+                });
+                
+                updateSystemStatus();
+            }, 3000);
+        }
+
+        // Start the system when page loads
+        window.addEventListener('load', initSystem);
+    </script>
+</body>
+</html>
